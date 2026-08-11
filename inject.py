@@ -1,5 +1,4 @@
 
-
 # ── FIXED: tek tırnak kaçışı düzgün, daha önce defalarca tespit edilen bug giderildi ──
 PWA_SCRIPT = """<script>
 (function() {
