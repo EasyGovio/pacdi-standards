@@ -1,3 +1,8 @@
+try:
+    domain = open('CNAME').read().strip()
+except FileNotFoundError:
+    domain = 'unknown'
+
 
 # ── FIXED: tek tırnak kaçışı düzgün, daha önce defalarca tespit edilen bug giderildi ──
 PWA_SCRIPT = """<script>
