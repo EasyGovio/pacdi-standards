@@ -32,11 +32,79 @@ ASCII_MUHUR = """<!--
 ╠═══════════════════════════════════════════════════════════════╣
 -->"""
 
-PWA_HEAD = """    <link rel="manifest" href="/manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="PACDI">
-"""
+TOOL_DISPLAY_NAMES = {
+    'qr.html': {'short': 'QR', 'name': 'PACDI QR Araçları', 'desc': 'QR kod oluşturma ve okuma araçları — tarayıcınızda, ücretsiz.'},
+    'pruefprotokoll.html': {'short': 'Prüf', 'name': 'PACDI Prüfprotokoll', 'desc': 'DGUV V3 elektrik test protokolü — dijital, hızlı, kağıtsız.'},
+    'scanner.html': {'short': 'Scan', 'name': 'PACDI Tarayıcı', 'desc': 'Telefonunuzla belge tarayın, PDF olarak kaydedin.'},
+    'envanter.html': {'short': 'Envanter', 'name': 'PACDI Envanter', 'desc': 'Demirbaş ve envanter takibi — basit, sunucusuz.'},
+    'quittung.html': {'short': 'Quittung', 'name': 'PACDI Quittung', 'desc': 'GoBD uyumlu makbuz/fiş oluşturucu.'},
+    'zeiterfassung.html': {'short': 'Zeit', 'name': 'PACDI Zeiterfassung', 'desc': 'Çalışma saati takibi — kolay ve hızlı.'},
+    'shortener.html': {'short': 'Link', 'name': 'PACDI Link Kısaltıcı', 'desc': 'Uzun linkleri kısaltın, takip edin.'},
+    'password.html': {'short': 'Pass', 'name': 'PACDI Şifre Üretici', 'desc': 'Güçlü, rastgele şifreler üretin — tarayıcınızda.'},
+    'encryption.html': {'short': 'Şifrele', 'name': 'PACDI Şifreleme', 'desc': 'Metin ve dosyalarınızı uçtan uca şifreleyin.'},
+    'filetransfer.html': {'short': 'Transfer', 'name': 'PACDI Dosya Transfer', 'desc': 'Dosyalarınızı güvenle paylaşın.'},
+    'converter.html': {'short': 'Dönüştür', 'name': 'PACDI Dönüştürücü', 'desc': 'Dosya formatları arası hızlı dönüştürme.'},
+    'checklist.html': {'short': 'Kontrol', 'name': 'PACDI Kontrol Listesi', 'desc': 'Dijital kontrol listeleri oluşturun ve takip edin.'},
+    'pdftools.html': {'short': 'PDF', 'name': 'PACDI PDF Araçları', 'desc': 'PDF birleştirme, bölme, sıkıştırma ve döndürme.'},
+    'signature.html': {'short': 'İmza', 'name': 'PACDI İmza', 'desc': 'Dijital imza aracı — hızlı ve güvenli.'},
+    'imagecompress.html': {'short': 'Resim', 'name': 'PACDI Resim Sıkıştırıcı', 'desc': 'Resimlerinizi sıkıştırın ve yeniden boyutlandırın.'},
+    'handwerker-rechner.html': {'short': 'Hesap', 'name': 'PACDI Handwerker Hesap', 'desc': 'Zanaatkarlar için hızlı maliyet hesaplayıcı.'},
+    'audiotool.html': {'short': 'Ses', 'name': 'PACDI Ses Aracı', 'desc': 'Ses dosyalarını düzenleyin ve dönüştürün.'},
+    'speechtools.html': {'short': 'Konuşma', 'name': 'PACDI Konuşma & Metin', 'desc': 'Konuşmayı metne, metni konuşmaya çevirin.'},
+    'audiorecorder.html': {'short': 'Kayıt', 'name': 'PACDI Ses Kaydedici', 'desc': 'Tarayıcınızdan doğrudan ses kaydedin.'},
+    'sozlesme-duzenleme-imza.html': {'short': 'Sözleşme', 'name': 'PACDI Sözleşme Düzenleme', 'desc': 'Sunucusuz sözleşme düzenleme ve e-imza aracı.'},
+}
+
+DEFAULT_TOOL_ICON_URL = "https://cdn-icons-png.flaticon.com/512/6849/6849232.png"
+DEFAULT_OG_IMAGE_URL = "https://cdn-icons-png.flaticon.com/512/6849/6849232.png"  # gercek og-image yuklenene kadar gecici
+
+def get_og_head(fname, domain, url):
+    """Her HTML dosyasi icin kendi og-images/ altindaki gorseline isaret eden
+    OG/Twitter meta blogu uretir. Bilinen bir arac degilse (index.html dahil)
+    bu bloğu hic eklemez — inject.py o durumda mevcut davranisini korur."""
+    info = TOOL_DISPLAY_NAMES.get(fname)
+    if not info:
+        return ''
+    og_image_disk = os.path.join('og-images', fname.replace('.html', '.png'))
+    if os.path.exists(og_image_disk):
+        og_image_url = 'https://' + domain + '/og-images/' + fname.replace('.html', '.png')
+    else:
+        og_image_url = DEFAULT_OG_IMAGE_URL
+    title = info['name']
+    desc = info.get('desc', info['name'] + ' — pacdi.store')
+    return (
+        '    <meta property="og:type" content="website">\n'
+        '    <meta property="og:url" content="' + url + '">\n'
+        '    <meta property="og:title" content="' + title + '">\n'
+        '    <meta property="og:description" content="' + desc + '">\n'
+        '    <meta property="og:image" content="' + og_image_url + '">\n'
+        '    <meta name="twitter:card" content="summary_large_image">\n'
+        '    <meta name="twitter:url" content="' + url + '">\n'
+        '    <meta name="twitter:title" content="' + title + '">\n'
+        '    <meta name="twitter:description" content="' + desc + '">\n'
+        '    <meta name="twitter:image" content="' + og_image_url + '">\n'
+    )
+
+def get_pwa_head(fname):
+    """Her HTML dosyasi icin kendi manifest.json ve apple-touch-icon'una isaret eden
+    PWA head bloğu üretir. Bilinen bir arac ise /manifests/ ve /icons/ altindaki kendi
+    dosyalarina, degilse (index.html dahil) site geneli /manifest.json'a duser."""
+    info = TOOL_DISPLAY_NAMES.get(fname)
+    if info:
+        manifest_href = '/manifests/' + fname.replace('.html', '.json')
+        icon_href = '/icons/' + fname.replace('.html', '.png')
+        title = info['short']
+    else:
+        manifest_href = '/manifest.json'
+        icon_href = '/icons/pacdi-default.png'
+        title = 'PACDI'
+    return (
+        '    <link rel="manifest" href="' + manifest_href + '">\n'
+        '    <meta name="apple-mobile-web-app-capable" content="yes">\n'
+        '    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n'
+        '    <meta name="apple-mobile-web-app-title" content="' + title + '">\n'
+        '    <link rel="apple-touch-icon" href="' + icon_href + '">\n'
+    )
 
 LANG_DETECT_SCRIPT = """<script>
 (function(){
@@ -398,6 +466,37 @@ with open('manifest.json', 'w', encoding='utf-8') as f:
     json.dump(manifest, f, ensure_ascii=False, indent=2)
 print('manifest.json created:', domain)
 
+# ── Her arac icin ayri manifests/<isim>.json uret (sadece pacdi.store) ──
+if domain == 'pacdi.store':
+    os.makedirs('manifests', exist_ok=True)
+    os.makedirs('icons', exist_ok=True)
+    _tool_manifest_count = 0
+    for _fname, _info in TOOL_DISPLAY_NAMES.items():
+        _icon_disk_path = os.path.join('icons', _fname.replace('.html', '.png'))
+        if os.path.exists(_icon_disk_path):
+            _icon_url = 'https://' + domain + '/icons/' + _fname.replace('.html', '.png')
+        else:
+            _icon_url = DEFAULT_TOOL_ICON_URL  # gercek ikon yuklenene kadar gecici, kirik link vermez
+        _tool_manifest = {
+            "name": _info['name'],
+            "short_name": _info['short'],
+            "description": _info['name'] + " — pacdi.store",
+            "start_url": "/" + _fname,
+            "scope": "/",
+            "display": "standalone",
+            "background_color": "#04162E",
+            "theme_color": "#04162E",
+            "orientation": "portrait",
+            "icons": [
+                {"src": _icon_url, "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+                {"src": _icon_url, "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+            ]
+        }
+        with open(os.path.join('manifests', _fname.replace('.html', '.json')), 'w', encoding='utf-8') as f:
+            json.dump(_tool_manifest, f, ensure_ascii=False, indent=2)
+        _tool_manifest_count += 1
+    print('Tool-specific manifests created:', _tool_manifest_count)
+
 # ── sw.js otomatik oluştur ──
 # CACHE_NAME her calistirmada degisen bir build damgasina bagli: inject.py
 # saatte bir calisip icerigi guncelledigi icin, sw.js'in KENDISI de her seferinde
@@ -487,8 +586,10 @@ for root, dirs, files in os.walk('.'):
                 insert += '    ' + ADSENSE + '\n'
             if 'canonical' not in content:
                 insert += '    <link rel="canonical" href="' + url + '" />\n'
-            if 'manifest.json' not in content and fname not in SKIP:
-                insert += PWA_HEAD
+            if 'rel="manifest"' not in content and fname not in SKIP:
+                insert += get_pwa_head(fname)
+            if 'og:title' not in content and fname not in SKIP:
+                insert += get_og_head(fname, domain, url)
             if 'autoLang' not in content and fname not in SKIP:
                 insert += '    ' + LANG_DETECT_SCRIPT
             if 'betaUnlock' not in content and fname not in SKIP:
