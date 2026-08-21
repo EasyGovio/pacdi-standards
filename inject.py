@@ -13,8 +13,73 @@ except FileNotFoundError:
     domain = 'unknown'
 
 
-ANALYTICS = '<script async src="https://www.googletagmanager.com/gtag/js?id=G-E6ML8EDW0H"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("js",new Date());gtag("config","G-E6ML8EDW0H");</script>'
-ADSENSE = '<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8426936740213369" crossorigin="anonymous"></script>'
+def get_cookie_consent_script(include_adsense):
+    ads_call = 'loadGA(); loadAdsense();' if include_adsense else 'loadGA();'
+    return COOKIE_CONSENT_SCRIPT_TEMPLATE.replace('__LOAD_ALL__', ads_call)
+
+COOKIE_CONSENT_SCRIPT_TEMPLATE = '''<script>
+(function(){
+  var GA_ID = "G-E6ML8EDW0H";
+  var ADS_CLIENT = "ca-pub-8426936740213369";
+  var CONSENT_KEY = "pacdiCookieConsent";
+
+  function loadGA(){
+    var s1 = document.createElement("script");
+    s1.async = true;
+    s1.src = "https://www.googletagmanager.com/gtag/js?id=" + GA_ID;
+    document.head.appendChild(s1);
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function(){ dataLayer.push(arguments); };
+    gtag("js", new Date());
+    gtag("config", GA_ID);
+  }
+  function loadAdsense(){
+    var s2 = document.createElement("script");
+    s2.async = true;
+    s2.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=" + ADS_CLIENT;
+    s2.crossOrigin = "anonymous";
+    document.head.appendChild(s2);
+  }
+  function loadAll(){ __LOAD_ALL__ }
+
+  var consent = null;
+  try { consent = localStorage.getItem(CONSENT_KEY); } catch(e){}
+
+  if (consent === "accepted") { loadAll(); return; }
+  if (consent === "rejected") { return; }
+
+  document.addEventListener("DOMContentLoaded", function(){
+    var lang = (document.documentElement.lang || "de").substring(0,2);
+    var texts = {
+      tr: { msg: "Bu site, deneyiminizi iyile\u015ftirmek i\u00e7in analiz ve reklam \u00e7erezleri kullan\u0131r. Detaylar i\u00e7in <a href=\\"/legal.html\\" style=\\"color:#F6B45F;\\">Gizlilik Politikam\u0131za</a> bakabilirsiniz.", accept: "Kabul Et", reject: "Reddet" },
+      de: { msg: "Diese Website verwendet Analyse- und Werbe-Cookies, um Ihre Erfahrung zu verbessern. Details finden Sie in unserer <a href=\\"/legal.html\\" style=\\"color:#F6B45F;\\">Datenschutzerkl\u00e4rung</a>.", accept: "Akzeptieren", reject: "Ablehnen" },
+      en: { msg: "This site uses analytics and advertising cookies to improve your experience. See our <a href=\\"/legal.html\\" style=\\"color:#F6B45F;\\">Privacy Policy</a> for details.", accept: "Accept", reject: "Reject" }
+    };
+    var t = texts[lang] || texts.de;
+
+    var banner = document.createElement("div");
+    banner.id = "pacdi-cookie-banner";
+    banner.style.cssText = "position:fixed;bottom:0;left:0;right:0;background:#04162E;border-top:1px solid rgba(246,180,95,0.25);padding:18px 20px;z-index:99999;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;box-shadow:0 -4px 20px rgba(0,0,0,0.3);font-family:-apple-system,BlinkMacSystemFont,\\"Segoe UI\\",sans-serif;";
+    banner.innerHTML =
+      "<div style=\\"flex:1;min-width:240px;font-size:0.85rem;color:#c8cdd5;line-height:1.5;\\">" + t.msg + "</div>" +
+      "<div style=\\"display:flex;gap:10px;flex-shrink:0;\\">" +
+        "<button id=\\"pacdi-cookie-reject\\" style=\\"background:transparent;border:1px solid rgba(246,180,95,0.4);color:#c8cdd5;padding:10px 20px;border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer;\\">" + t.reject + "</button>" +
+        "<button id=\\"pacdi-cookie-accept\\" style=\\"background:#F6B45F;border:none;color:#04162E;padding:10px 20px;border-radius:8px;font-size:0.85rem;font-weight:700;cursor:pointer;\\">" + t.accept + "</button>" +
+      "</div>";
+    document.body.appendChild(banner);
+
+    document.getElementById("pacdi-cookie-accept").onclick = function(){
+      try { localStorage.setItem(CONSENT_KEY, "accepted"); } catch(e){}
+      loadAll();
+      banner.remove();
+    };
+    document.getElementById("pacdi-cookie-reject").onclick = function(){
+      try { localStorage.setItem(CONSENT_KEY, "rejected"); } catch(e){}
+      banner.remove();
+    };
+  });
+})();
+</script>'''
 
 ASCII_MUHUR = """<!--
 ╬═══════════════════════════════════════════════════════════════╮
@@ -580,10 +645,8 @@ for root, dirs, files in os.walk('.'):
 
             # ── HEAD injections ──
             insert = ''
-            if 'G-E6ML8EDW0H' not in content:
-                insert += '    ' + ANALYTICS + '\n'
-            if 'ca-pub-8426936740213369' not in content and fname not in SKIP:
-                insert += '    ' + ADSENSE + '\n'
+            if 'pacdiCookieConsent' not in content:
+                insert += '    ' + get_cookie_consent_script(fname not in SKIP) + '\n'
             if 'canonical' not in content:
                 insert += '    <link rel="canonical" href="' + url + '" />\n'
             if 'rel="manifest"' not in content and fname not in SKIP:
