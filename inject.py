@@ -195,6 +195,29 @@ BETA_UNLOCK_SCRIPT = """<script>
 </script>
 """
 
+# Sahada dokunmatik kullanim icin: sayfa/kenar kaymasini (iOS "lastik bandi" efekti) keser
+# ve tum canvas elemanlarina (imza kutulari, oyun canvas'lari) touch-action:none uygular
+# — boylece canvas uzerinde cizim/surukleme yaparken sayfa arka planda kaymiyor.
+# Dinamik olusturulan canvas'lar icin MutationObserver ile de takip edilir.
+VIEWPORT_LOCK_SCRIPT = """<style id="viewportLock">html,body{overscroll-behavior:none;}</style>
+<script>
+(function(){
+  function lockCanvases(){
+    document.querySelectorAll('canvas').forEach(function(c){
+      c.style.touchAction = 'none';
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', lockCanvases);
+  } else {
+    lockCanvases();
+  }
+  var mo = new MutationObserver(lockCanvases);
+  mo.observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>
+"""
+
 # ── Blog makaleleri için: tarayıcı çevirisi ipucu kutusu ──
 TRANSLATE_TIP = """        <div class="info-box" style="background:#eef6ff;border-color:#a8cff0;border-left-color:#2a7de1;">
             <p><strong>🌍 In Ihrer Sprache lesen?</strong> Bu sayfayı kendi dilinizde okumak isterseniz / Want to read this in your language: <strong>iPhone/Safari</strong> — Adressleiste antippen → "aA" → Übersetzen. <strong>Android/Chrome</strong> — Menü (⋮) → Übersetzen. Die Übersetzung erfolgt direkt im Browser, kostenlos.</p>
@@ -657,6 +680,8 @@ for root, dirs, files in os.walk('.'):
                 insert += '    ' + LANG_DETECT_SCRIPT
             if 'betaUnlock' not in content and fname not in SKIP:
                 insert += '    ' + BETA_UNLOCK_SCRIPT
+            if 'viewportLock' not in content and fname not in SKIP:
+                insert += '    ' + VIEWPORT_LOCK_SCRIPT
             if 'pacdiShareBar' not in content and fname not in SKIP_FOOTER:
                 insert += SHARE_BAR_HEAD
             if ('pacdiThemeToggle' not in content and 'data-pacdi-native-theme' not in content
