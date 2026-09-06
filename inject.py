@@ -93,7 +93,7 @@ ASCII_MUHUR = """<!--
 ║  protected under PACDI Software Library FSEK registration.   ║
 ║  Unauthorized copying is subject to legal action.            ║
 ║                                                               ║
-║  pacdi.eu · pacdi.de · info@pacdi.eu                         ║
+║  pacdi.de · pacdi.eu · info@pacdi.de                         ║
 ╠═══════════════════════════════════════════════════════════════╣
 -->"""
 
@@ -367,7 +367,8 @@ FSEK_FOOTER = """<div id="pacdi-fsek" style="clear:both;width:100%;flex-basis:10
     <span style="font-size:0.72rem;font-weight:700;letter-spacing:0.1em;color:#D4AF37;text-transform:uppercase;">FSEK Registered · PACDI Framework</span>
   </div>
   <div style="font-size:0.78rem;color:#8A8F9A;margin-bottom:4px;">Operated by AskMeAI Teknoloji Ltd. Şti. (TR: 23837)</div>
-  <div style="font-size:0.72rem;color:#6B7280;margin-bottom:10px;">Intellectual property owned by © 2026 PACDI Global Yazılım Ltd. Şti. &mdash; FSEK No: <a href="https://pacdi.eu/legal.html" style="color:#D4AF37;text-decoration:none;">2026/18897</a></div>
+  <div style="font-size:0.72rem;color:#6B7280;margin-bottom:10px;">Intellectual property owned by © 2026 PACDI Global Yazılım Ltd. Şti. &mdash; FSEK No: <a href="https://pacdi.store/legal.html" style="color:#D4AF37;text-decoration:none;">2026/18897</a></div>
+  <div style="font-size:0.78rem;margin-bottom:10px;"><a href="https://pacdi.store/legal.html" style="color:#D4AF37;text-decoration:none;border-bottom:1px solid rgba(212,175,55,0.3);">Impressum &amp; Datenschutz &amp; AGB</a></div>
   <div style="font-size:0.82rem;font-style:italic;color:#6B7280;">&ldquo;Technology in the service of humanity.&rdquo;</div>
 </div>"""
 
@@ -415,14 +416,14 @@ LEGAL_HTML = '''<!DOCTYPE html>
 ║  protected under PACDI Software Library FSEK registration.   ║
 ║  Unauthorized copying is subject to legal action.            ║
 ║                                                               ║
-║  pacdi.eu · pacdi.de · info@pacdi.eu                         ║
+║  pacdi.de · pacdi.eu · info@pacdi.de                         ║
 ╠═══════════════════════════════════════════════════════════════╣
 -->
 
 <div class="wrap">
 <a href="/" class="back">&larr; Zur&uuml;ck</a>
 <h1>Impressum &amp; Datenschutz</h1>
-<p class="subtitle">Vollst&auml;ndige rechtliche Informationen: <a href="https://pacdi.eu/legal.html" target="_blank">pacdi.eu/legal.html</a></p>
+<p class="subtitle">Vollst&auml;ndige rechtliche Informationen: <a href="https://pacdi.store/legal.html" target="_blank">pacdi.store/legal.html</a></p>
 
 <h2>Impressum</h2>
 <div class="box">
@@ -498,7 +499,7 @@ PRIVATE_PREFIXES = ('mein-', 'private-', 'pacdi-sunum', 'personal-', 'intern-')
 def is_private(filename):
     return any(filename.startswith(p) for p in PRIVATE_PREFIXES)
 
-# ── Diğer repolar için: pacdi.eu/legal.html'e gerçek yönlendirme sayfası ──
+# ── Diğer repolar için: pacdi.store/legal.html'e gerçek yönlendirme sayfası ──
 LEGAL_REDIRECT = '''<!DOCTYPE html>
 <html lang="de">
 <head>
@@ -506,32 +507,27 @@ LEGAL_REDIRECT = '''<!DOCTYPE html>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Impressum &amp; Datenschutz</title>
     <meta name="robots" content="noindex, follow">
-    <link rel="canonical" href="https://pacdi.eu/legal.html" />
-    <meta http-equiv="refresh" content="0; url=https://pacdi.eu/legal.html">
-    <script>window.location.replace('https://pacdi.eu/legal.html');</script>
+    <link rel="canonical" href="https://pacdi.store/legal.html" />
+    <meta http-equiv="refresh" content="0; url=https://pacdi.store/legal.html">
+    <script>window.location.replace('https://pacdi.store/legal.html');</script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #04162E; color: #e8edf2; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; text-align: center; }
         a { color: #F6B45F; }
     </style>
 </head>
 <body>
-    <p>Weiterleitung zu <a href="https://pacdi.eu/legal.html">pacdi.eu/legal.html</a> &hellip;</p>
+    <p>Weiterleitung zu <a href="https://pacdi.store/legal.html">pacdi.store/legal.html</a> &hellip;</p>
 </body>
 </html>
 '''
 
-# ── legal.html: domain'e göre üç farklı davranış ──
+# ── legal.html: pacdi.store tek merkezi kaynak, diğer tüm domainler ona yönlenir ──
 if domain == 'pacdi.store':
     print('Skipping legal.html for pacdi.store (has custom version)')
-elif domain == 'pacdi.eu':
-    legal_content = LEGAL_HTML.format()
-    with open('legal.html', 'w', encoding='utf-8') as f:
-        f.write(legal_content)
-    print('Legal updated (full content, canonical source): legal.html')
 else:
     with open('legal.html', 'w', encoding='utf-8') as f:
         f.write(LEGAL_REDIRECT)
-    print('Legal updated (redirect to pacdi.eu): legal.html')
+    print('Legal updated (redirect to pacdi.store): legal.html')
 
 # ── manifest.json otomatik oluştur ──
 import json
@@ -748,13 +744,6 @@ for root, dirs, files in os.walk('.'):
                 body_end = content.find('>', content.find('<body')) + 1
                 content = content[:body_end] + '\n' + ASCII_MUHUR + '\n' + content[body_end:]
 
-            # ── FSEK footer eski versiyon güncelle ──
-            if 'pacdi-fsek' in content:
-                content = content.replace(
-                    '<div style="font-size:0.78rem;color:#8A8F9A;margin-bottom:4px;">© 2026 PACDI Global Yazılım Ltd. Şti.</div>\n  <div style="font-size:0.72rem;color:#6B7280;margin-bottom:10px;">Protected under FSEK Copyright Registration No: <a href="https://pacdi.eu" style="color:#D4AF37;text-decoration:none;">2026/18897</a></div>',
-                    '<div style="font-size:0.78rem;color:#8A8F9A;margin-bottom:4px;">Operated by AskMeAI Teknoloji Ltd. Şti. (TR: 23837)</div>\n  <div style="font-size:0.72rem;color:#6B7280;margin-bottom:10px;">Intellectual property owned by © 2026 PACDI Global Yazılım Ltd. Şti. &mdash; FSEK No: <a href="https://pacdi.eu/legal.html" style="color:#D4AF37;text-decoration:none;">2026/18897</a></div>'
-                )
-
             # ── Inline Impressum fix: PACDI Global → AskMeAI ──
             if 'Verantwortlich: PACDI Global' in content:
                 content = content.replace(
@@ -793,17 +782,42 @@ for root, dirs, files in os.walk('.'):
                 )
 
             # ── FSEK visible footer ──
-            if 'pacdi-fsek' not in content and '</body>' in content and fname not in SKIP_FOOTER:
-                import re as _re
-                body_flex = _re.search(r'body\s*\{[^}]*display\s*:\s*flex', content)
-                if body_flex:
-                    last_div = find_last_real_div_close(content)  # DUZELTME: artik script icine dusmuyor
-                    if last_div > 0:
-                        content = content[:last_div] + FSEK_FOOTER + '\n' + content[last_div:]
+            if fname not in SKIP_FOOTER:
+                if 'pacdi-fsek' in content:
+                    # Zaten varsa: eski bloğu bul (dengeli div kapanışıyla) ve tamamen güncel FSEK_FOOTER ile değiştir
+                    import re as _re
+                    m = _re.search(r'<div id="pacdi-fsek"[^>]*>', content)
+                    if m:
+                        start = m.start()
+                        pos = m.end()
+                        depth = 1
+                        while depth > 0:
+                            next_open = content.find('<div', pos)
+                            next_close = content.find('</div>', pos)
+                            if next_close == -1:
+                                start = None
+                                break
+                            if next_open != -1 and next_open < next_close:
+                                depth += 1
+                                pos = next_open + 4
+                            else:
+                                depth -= 1
+                                pos = next_close + 6
+                        if start is not None:
+                            old_block = content[start:pos]
+                            if old_block != FSEK_FOOTER:
+                                content = content[:start] + FSEK_FOOTER + content[pos:]
+                elif '</body>' in content:
+                    import re as _re
+                    body_flex = _re.search(r'body\s*\{[^}]*display\s*:\s*flex', content)
+                    if body_flex:
+                        last_div = find_last_real_div_close(content)  # DUZELTME: artik script icine dusmuyor
+                        if last_div > 0:
+                            content = content[:last_div] + FSEK_FOOTER + '\n' + content[last_div:]
+                        else:
+                            content = content.replace('</body>', FSEK_FOOTER + '\n</body>', 1)
                     else:
                         content = content.replace('</body>', FSEK_FOOTER + '\n</body>', 1)
-                else:
-                    content = content.replace('</body>', FSEK_FOOTER + '\n</body>', 1)
 
             # ── PACDI paylaşım çubuğu — eski (flex-basis'siz) sürümü otomatik onar ──
             # Bu düzeltmeden önce eklenmiş sayfalarda çubuk stilsiz div ile duruyordu;
