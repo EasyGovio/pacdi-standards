@@ -363,7 +363,7 @@ SPONSOR_BAR_SCRIPT = """<div class="pacdi-sponsor-section" id="pacdiSponsorBar" 
 <script src="https://pacdi.store/assets/sponsor-bar.js"></script>
 """
 
-FEEDBACK_WIDGET = """<button id="pacdi-feedback-btn" onclick="document.getElementById('pacdi-feedback-title').textContent='Oneri veya Hata Bildir';document.getElementById('pacdi-feedback-message').value='';document.getElementById('pacdi-feedback-modal').style.display='flex'" style="position:fixed;bottom:20px;right:20px;width:52px;height:52px;border-radius:50%;background:#F6B45F;border:none;font-size:1.4rem;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.3);z-index:9998;" title="Oneri veya hata bildir">💬</button>
+FEEDBACK_WIDGET = """<button id="pacdi-feedback-btn" onclick="document.getElementById('pacdi-feedback-title').textContent='Oneri veya Hata Bildir';document.getElementById('pacdi-feedback-message').value='';var pslf=document.getElementById('pacdi-sponsor-logo-field');if(pslf)pslf.style.display='none';document.getElementById('pacdi-feedback-modal').style.display='flex'" style="position:fixed;bottom:20px;right:20px;width:52px;height:52px;border-radius:50%;background:#F6B45F;border:none;font-size:1.4rem;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.3);z-index:9998;" title="Oneri veya hata bildir">💬</button>
 <div id="pacdi-feedback-modal" style="display:none;position:fixed;inset:0;background:rgba(4,22,46,0.75);z-index:9999;align-items:center;justify-content:center;padding:16px;">
   <div style="background:#0a2340;border:1px solid rgba(246,180,95,0.25);border-radius:12px;padding:24px;max-width:420px;width:100%;font-family:-apple-system,BlinkMacSystemFont,sans-serif;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
@@ -372,6 +372,11 @@ FEEDBACK_WIDGET = """<button id="pacdi-feedback-btn" onclick="document.getElemen
     </div>
     <textarea id="pacdi-feedback-message" placeholder="Ne dusunuyorsunuz? Bir hata mi buldunuz, yoksa oneriniz mi var?" style="width:100%;min-height:100px;background:rgba(255,255,255,0.03);border:1px solid rgba(246,180,95,0.15);border-radius:8px;padding:10px;color:#e8edf2;font-family:inherit;font-size:0.88rem;resize:vertical;margin-bottom:10px;box-sizing:border-box;"></textarea>
     <input type="text" id="pacdi-feedback-contact" placeholder="E-posta (istege bagli - degerli onerilere tesekkur/hediye gonderebilmemiz icin birakmanizi oneririz)" style="width:100%;background:rgba(255,255,255,0.03);border:1px solid rgba(246,180,95,0.15);border-radius:8px;padding:10px;color:#e8edf2;font-family:inherit;font-size:0.85rem;margin-bottom:10px;box-sizing:border-box;">
+    <div id="pacdi-sponsor-logo-field" style="display:none;margin-bottom:10px;">
+      <label style="font-size:0.78rem;color:#7a9ab8;display:block;margin-bottom:6px;">Logo (istege bagli, otomatik kucultulur)</label>
+      <input type="file" id="pacdi-sponsor-logo-input" accept="image/*" style="width:100%;font-size:0.8rem;color:#c8cdd5;">
+      <div id="pacdi-sponsor-logo-status" style="font-size:0.72rem;color:#6fcf97;margin-top:4px;"></div>
+    </div>
     <input type="text" id="pacdi-feedback-website" name="website" autocomplete="off" tabindex="-1" style="position:absolute;left:-9999px;opacity:0;height:0;width:0;">
     <div id="pacdi-feedback-status" style="font-size:0.8rem;margin-bottom:10px;display:none;"></div>
     <button id="pacdi-feedback-submit" onclick="pacdiSubmitFeedback()" style="width:100%;background:#F6B45F;color:#04162E;border:none;border-radius:8px;padding:11px;font-weight:700;font-size:0.9rem;cursor:pointer;font-family:inherit;">Gonder</button>
@@ -380,6 +385,39 @@ FEEDBACK_WIDGET = """<button id="pacdi-feedback-btn" onclick="document.getElemen
 <script>
 (function() {
   var pacdiFeedbackOpenTime = Date.now();
+  var pacdiSponsorLogoData = '';
+
+  function pacdiCompressImage(file, maxSize, quality, callback) {
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      var img = new Image();
+      img.onload = function() {
+        var w = img.width, h = img.height;
+        if (w > h) { if (w > maxSize) { h = Math.round(h * maxSize / w); w = maxSize; } }
+        else { if (h > maxSize) { w = Math.round(w * maxSize / h); h = maxSize; } }
+        var canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        callback(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  var pacdiLogoInputEl = document.getElementById('pacdi-sponsor-logo-input');
+  if (pacdiLogoInputEl) {
+    pacdiLogoInputEl.addEventListener('change', function() {
+      var file = pacdiLogoInputEl.files[0];
+      var statusEl = document.getElementById('pacdi-sponsor-logo-status');
+      if (!file) { pacdiSponsorLogoData = ''; if (statusEl) statusEl.textContent = ''; return; }
+      pacdiCompressImage(file, 200, 0.7, function(dataUrl) {
+        pacdiSponsorLogoData = dataUrl;
+        if (statusEl) statusEl.textContent = '✓ Logo hazir (' + Math.round(dataUrl.length / 1024) + ' KB)';
+      });
+    });
+  }
+
   window.pacdiSubmitFeedback = function() {
     var honeypot = document.getElementById('pacdi-feedback-website').value;
     var elapsed = Date.now() - pacdiFeedbackOpenTime;
@@ -408,10 +446,15 @@ FEEDBACK_WIDGET = """<button id="pacdi-feedback-btn" onclick="document.getElemen
     submitBtn.disabled = true;
     submitBtn.textContent = 'Gonderiliyor...';
 
+    var fullMessage = message;
+    if (pacdiSponsorLogoData) {
+      fullMessage += '\n\n[SPONSOR LOGO - base64]:\n' + pacdiSponsorLogoData;
+    }
+
     fetch('/api/v1/feedback/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tool: document.title, name: '', contact: contact, message: message })
+      body: JSON.stringify({ tool: document.title, name: '', contact: contact, message: fullMessage })
     }).then(function(res) { return res.json(); }).then(function(data) {
       submitBtn.disabled = false;
       submitBtn.textContent = 'Gonder';
