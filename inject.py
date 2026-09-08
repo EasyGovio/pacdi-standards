@@ -357,6 +357,87 @@ DARKMODE_SCRIPT = """<script>
 </script>
 """
 
+SPONSOR_BAR_HEAD = '    <style>\n    .pacdi-sponsor-title{font-size:0.9rem;font-weight:700;color:#F6B45F;text-align:center;margin-bottom:12px;letter-spacing:0.05em;}\n    .pacdi-sponsor-grid{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;}\n    .pacdi-sponsor-placeholder{color:#6a7a8a;font-size:0.7rem;text-align:center;padding:10px;}\n    .pacdi-sponsor-apply-btn{background:transparent;border:1px solid rgba(246,180,95,0.4);color:#F6B45F;padding:8px 16px;border-radius:20px;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit;}\n    </style>\n'
+
+SPONSOR_BAR_SCRIPT = """<div class="pacdi-sponsor-section" id="pacdiSponsorBar" style="clear:both;width:100%;flex-basis:100%;margin-top:24px;padding:16px;background:rgba(212,175,55,0.05);border:1px solid rgba(212,175,55,0.2);border-radius:12px;box-sizing:border-box;"></div>
+<script src="https://pacdi.store/assets/sponsor-bar.js"></script>
+"""
+
+FEEDBACK_WIDGET = """<button id="pacdi-feedback-btn" onclick="document.getElementById('pacdi-feedback-title').textContent='Oneri veya Hata Bildir';document.getElementById('pacdi-feedback-message').value='';document.getElementById('pacdi-feedback-modal').style.display='flex'" style="position:fixed;bottom:20px;right:20px;width:52px;height:52px;border-radius:50%;background:#F6B45F;border:none;font-size:1.4rem;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.3);z-index:9998;" title="Oneri veya hata bildir">💬</button>
+<div id="pacdi-feedback-modal" style="display:none;position:fixed;inset:0;background:rgba(4,22,46,0.75);z-index:9999;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#0a2340;border:1px solid rgba(246,180,95,0.25);border-radius:12px;padding:24px;max-width:420px;width:100%;font-family:-apple-system,BlinkMacSystemFont,sans-serif;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <h3 id="pacdi-feedback-title" style="color:#F6B45F;font-size:1.05rem;margin:0;">Oneri veya Hata Bildir</h3>
+      <button onclick="document.getElementById('pacdi-feedback-modal').style.display='none'" style="background:transparent;border:none;color:#7a9ab8;font-size:1.3rem;cursor:pointer;">✕</button>
+    </div>
+    <textarea id="pacdi-feedback-message" placeholder="Ne dusunuyorsunuz? Bir hata mi buldunuz, yoksa oneriniz mi var?" style="width:100%;min-height:100px;background:rgba(255,255,255,0.03);border:1px solid rgba(246,180,95,0.15);border-radius:8px;padding:10px;color:#e8edf2;font-family:inherit;font-size:0.88rem;resize:vertical;margin-bottom:10px;box-sizing:border-box;"></textarea>
+    <input type="text" id="pacdi-feedback-contact" placeholder="E-posta (istege bagli - degerli onerilere tesekkur/hediye gonderebilmemiz icin birakmanizi oneririz)" style="width:100%;background:rgba(255,255,255,0.03);border:1px solid rgba(246,180,95,0.15);border-radius:8px;padding:10px;color:#e8edf2;font-family:inherit;font-size:0.85rem;margin-bottom:10px;box-sizing:border-box;">
+    <input type="text" id="pacdi-feedback-website" name="website" autocomplete="off" tabindex="-1" style="position:absolute;left:-9999px;opacity:0;height:0;width:0;">
+    <div id="pacdi-feedback-status" style="font-size:0.8rem;margin-bottom:10px;display:none;"></div>
+    <button id="pacdi-feedback-submit" onclick="pacdiSubmitFeedback()" style="width:100%;background:#F6B45F;color:#04162E;border:none;border-radius:8px;padding:11px;font-weight:700;font-size:0.9rem;cursor:pointer;font-family:inherit;">Gonder</button>
+  </div>
+</div>
+<script>
+(function() {
+  var pacdiFeedbackOpenTime = Date.now();
+  window.pacdiSubmitFeedback = function() {
+    var honeypot = document.getElementById('pacdi-feedback-website').value;
+    var elapsed = Date.now() - pacdiFeedbackOpenTime;
+    var statusEl = document.getElementById('pacdi-feedback-status');
+    var message = document.getElementById('pacdi-feedback-message').value.trim();
+    var contact = document.getElementById('pacdi-feedback-contact').value.trim();
+
+    if (!message) {
+      statusEl.style.display = 'block';
+      statusEl.style.color = '#e8604c';
+      statusEl.textContent = 'Lutfen bir mesaj yazin.';
+      return;
+    }
+
+    if (honeypot || elapsed < 2000) {
+      statusEl.style.display = 'block';
+      statusEl.style.color = '#6fcf97';
+      statusEl.textContent = 'Tesekkurler! Mesajiniz iletildi.';
+      document.getElementById('pacdi-feedback-message').value = '';
+      document.getElementById('pacdi-feedback-contact').value = '';
+      setTimeout(function() { document.getElementById('pacdi-feedback-modal').style.display = 'none'; statusEl.style.display = 'none'; }, 1500);
+      return;
+    }
+
+    var submitBtn = document.getElementById('pacdi-feedback-submit');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Gonderiliyor...';
+
+    fetch('/api/v1/feedback/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tool: document.title, name: '', contact: contact, message: message })
+    }).then(function(res) { return res.json(); }).then(function(data) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Gonder';
+      statusEl.style.display = 'block';
+      if (data.ok) {
+        statusEl.style.color = '#6fcf97';
+        statusEl.textContent = 'Tesekkurler! Mesajiniz iletildi.';
+        document.getElementById('pacdi-feedback-message').value = '';
+        document.getElementById('pacdi-feedback-contact').value = '';
+        setTimeout(function() { document.getElementById('pacdi-feedback-modal').style.display = 'none'; statusEl.style.display = 'none'; }, 1500);
+      } else {
+        statusEl.style.color = '#e8604c';
+        statusEl.textContent = 'Bir hata olustu, lutfen tekrar deneyin.';
+      }
+    }).catch(function() {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Gonder';
+      statusEl.style.display = 'block';
+      statusEl.style.color = '#e8604c';
+      statusEl.textContent = 'Baglanti hatasi, lutfen tekrar deneyin.';
+    });
+  };
+})();
+</script>
+"""
+
 SHARE_BAR_SCRIPT = """<div class="pacdi-share-bar" id="pacdiShareBar" style="clear:both;width:100%;flex-basis:100%;"></div>
 <script src="https://pacdi.store/assets/share-bar.js"></script>
 """
@@ -680,6 +761,8 @@ for root, dirs, files in os.walk('.'):
                 insert += '    ' + VIEWPORT_LOCK_SCRIPT
             if 'pacdiShareBar' not in content and fname not in SKIP_FOOTER:
                 insert += SHARE_BAR_HEAD
+            if 'pacdiSponsorBar' not in content and fname not in SKIP_FOOTER:
+                insert += SPONSOR_BAR_HEAD
             if ('pacdiThemeToggle' not in content and 'data-pacdi-native-theme' not in content
                     and fname not in SKIP and page_is_light_by_default(content)):
                 insert += '    ' + DARKMODE_HEAD
@@ -843,6 +926,16 @@ for root, dirs, files in os.walk('.'):
             if ('pacdiShareBar' not in content and fname not in SKIP_FOOTER
                     and '<div id="pacdi-fsek"' in content):
                 content = content.replace('<div id="pacdi-fsek"', SHARE_BAR_SCRIPT + '\n<div id="pacdi-fsek"', 1)
+
+            # ── PACDI sponsorluk bolumu — paylasim cubugunun altina, FSEK footer'in hemen ustune ──
+            if ('pacdiSponsorBar' not in content and fname not in SKIP_FOOTER
+                    and '<div id="pacdi-fsek"' in content):
+                content = content.replace('<div id="pacdi-fsek"', SPONSOR_BAR_SCRIPT + '\n<div id="pacdi-fsek"', 1)
+
+            # ── PACDI feedback widget — sayfa sonuna ──
+            if ('pacdi-feedback-btn' not in content and '</body>' in content
+                    and fname not in SKIP_FOOTER):
+                content = content.replace('</body>', FEEDBACK_WIDGET + '\n</body>', 1)
 
             if content != orig:
                 with open(fpath, 'w', encoding='utf-8') as f:
